@@ -15,7 +15,7 @@ void main() throws Exception {
     var yMatcher = resourcesDir.getFileSystem().getPathMatcher("glob:y*.json");
     var nMatcher = resourcesDir.getFileSystem().getPathMatcher("glob:n*.json");
     var iMatcher = resourcesDir.getFileSystem().getPathMatcher("glob:i*.json");
-    record Result(Element element, Throwable exception, Path p) {}
+    record Result(Path p, Element element, Throwable exception) {}
     var results = new ArrayList<Result>();
     try (var sources = Files.list(resourcesDir)) {
         sources.filter(f -> jsonMatcher.matches(f.getFileName()))
@@ -23,14 +23,14 @@ void main() throws Exception {
                     try {
                         var result = parse(p);
                         if (nMatcher.matches(p.getFileName())) {
-                            results.add(new Result(result, null, p));
+                            results.add(new Result(p, result, null));
                             //System.err.printf("%s shouldn't have been parsed into %s%n", p.getFileName(), result);
                         } else {
                             //System.out.printf("%s successfully parsed into %s%n", p.getFileName(), result);
                         }
                     } catch (Throwable t) {
                         if (yMatcher.matches(p.getFileName())) {
-                            results.add(new Result(null, t, p));
+                            results.add(new Result(p, null, t));
                             //System.err.printf("%s should haven been successfully parsed; exception is: %s%n", p.getFileName(), t);
                         } else if (iMatcher.matches(p.getFileName())) {
                             //System.out.printf("Acceptable not to have parsed %s, reason being %s%n", p.getFileName(), t);
