@@ -4,7 +4,7 @@ import io.github.ralfspoeth.json.io.JsonReader;
 import static java.util.Objects.requireNonNull;
 
 Element parse(Path p) throws Exception {
-    try (var rdr = new JsonReader(Files.newBufferedReader(p))) {
+    try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
         return rdr.readElement();
     }
 }
@@ -21,9 +21,9 @@ void main() throws Exception {
         sources.filter(f -> jsonMatcher.matches(f.getFileName()))
                 .forEach(p -> {
                     try {
-                        var result = parse(p);
-                        if (nMatcher.matches(p.getFileName())) {
-                            results.add(new Result(p, result, null));
+                        var elem = parse(p);
+                        if (nMatcher.matches(p.getFileName()) && elem!=null) {
+                            results.add(new Result(p, elem, null));
                             //System.err.printf("%s shouldn't have been parsed into %s%n", p.getFileName(), result);
                         } else {
                             //System.out.printf("%s successfully parsed into %s%n", p.getFileName(), result);
