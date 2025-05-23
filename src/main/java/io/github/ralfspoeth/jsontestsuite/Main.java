@@ -13,7 +13,7 @@ private final List<Result> rejectedIs = new ArrayList<>();
 // parse a single JSON file
 Result parse(Path p) {
     try (var rdr = new JsonReader(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-        return new Result(p, rdr.readElement(),null);
+        return new Result(p, rdr.readElement(), null);
     } catch (Throwable t) {
         return new Result(p, null, t);
     }
@@ -24,7 +24,7 @@ Predicate<Path> fileNameFilter(FileSystem fs, String pattern) {
 }
 
 void collectYs(Path resourceDir) throws IOException {
-    try(var files = Files.list(resourceDir)) {
+    try (var files = Files.list(resourceDir)) {
         files.filter(fileNameFilter(resourceDir.getFileSystem(), "y*.json"))
                 .map(this::parse)
                 .filter(r -> r.exception != null)
@@ -33,16 +33,16 @@ void collectYs(Path resourceDir) throws IOException {
 }
 
 void collectNs(Path resourceDir) throws IOException {
-    try(var files = Files.list(resourceDir)) {
+    try (var files = Files.list(resourceDir)) {
         files.filter(fileNameFilter(resourceDir.getFileSystem(), "n*.json"))
                 .map(this::parse)
-                .filter(r -> r.exception == null && r.element!=null)
+                .filter(r -> r.exception == null && r.element != null)
                 .forEach(acceptedNs::add);
     }
 }
 
 void collectIs(Path resourceDir) throws IOException {
-    try(var files = Files.list(resourceDir)) {
+    try (var files = Files.list(resourceDir)) {
         files.filter(fileNameFilter(resourceDir.getFileSystem(), "i*.json"))
                 .map(this::parse)
                 .forEach(r -> {
@@ -55,26 +55,35 @@ void collectIs(Path resourceDir) throws IOException {
     }
 }
 
-void listResults(List<Result> results) {
-    System.out.println("Path\tElement\tException");
-    results.forEach(r -> System.out.printf("%s\t%s\t%s%n",
+String maxLength(String s, int max) {
+    return max > s.length() ? s : s.substring(0, max-3)+"...";
+}
+
+String formatJson(String json) {
+    return maxLength(json.replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t"), 40);
+}
+
+void listResults(List<Result> results, String should, String did) {
+    results.forEach(r -> System.out.printf("%s\t%s\t%s\t%s\t%s%n",
             r.p,
-            r.element==null?"":r.element.json().replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t"),
-            r.exception==null?"":r.exception.getMessage())
+            should,
+            did,
+            r.element == null ? "" : formatJson(r.element.json()),
+            r.exception == null ? "" : r.exception)
     );
 }
 
 void main() throws Exception {
     var resourcesDir = Path.of(requireNonNull(getClass().getResource("/")).toURI());
+    parse(resourcesDir.resolve("i_string_iso_latin_1.json"));
     collectNs(resourcesDir);
     collectYs(resourcesDir);
     collectIs(resourcesDir);
-    System.out.printf("Accepted N Files: %d%n", acceptedNs.size());
-    listResults(acceptedNs);
-    System.out.printf("Rejected Y Files: %d%n", rejectedYs.size());
-    listResults(rejectedYs);
-    System.out.printf("Accepted I Files: %d%n", acceptedIs.size());
-    listResults(acceptedIs);
-    System.out.printf("Rejected I Files: %d%n", rejectedIs.size());
-    listResults(rejectedIs);
+    System.out.println("Path\tShould accept\tDid accept\tElement\tException");
+    listResults(acceptedNs, "no", "yes");
+    listResults(rejectedYs, "yes", "no");
+    listResults(acceptedIs, "may", "yes");
+    listResults(rejectedIs, "may", "no");
 }
